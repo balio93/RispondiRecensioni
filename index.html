@@ -5,6 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Replica — Risposte IA alle recensioni</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<style>
+  .spinner {
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid #2563eb;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+</style>
 </head>
 <body class="bg-gray-50 min-h-screen p-4">
   <div class="max-w-2xl mx-auto">
@@ -81,7 +95,7 @@
       </div>
 
       <button id="btnGenera" onclick="generaRisposta()"
-        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition">
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed">
         Genera risposta
       </button>
     </div>
@@ -101,6 +115,13 @@
     </p>
   </div>
 
+  <!-- Overlay di caricamento -->
+  <div id="loadingOverlay" class="hidden fixed inset-0 bg-white bg-opacity-80 items-center justify-center flex-col z-50">
+    <div class="spinner mb-4"></div>
+    <p class="text-gray-700 font-medium">Sto generando la risposta...</p>
+    <p class="text-gray-400 text-sm mt-1">Ci vogliono pochi secondi</p>
+  </div>
+
 <script>
 async function generaRisposta() {
   const nome = document.getElementById('nomeAttivita').value.trim();
@@ -114,6 +135,7 @@ async function generaRisposta() {
   const btn = document.getElementById('btnGenera');
   const erroreEl = document.getElementById('errore');
   const outputBox = document.getElementById('outputBox');
+  const overlay = document.getElementById('loadingOverlay');
 
   erroreEl.classList.add('hidden');
   outputBox.classList.add('hidden');
@@ -126,6 +148,8 @@ async function generaRisposta() {
 
   btn.disabled = true;
   btn.textContent = 'Generazione in corso...';
+  overlay.classList.remove('hidden');
+  overlay.classList.add('flex');
 
   try {
     const response = await fetch('/api/genera', {
@@ -144,12 +168,17 @@ async function generaRisposta() {
 
     document.getElementById('risultato').textContent = data.testo;
     outputBox.classList.remove('hidden');
+
+    // Scroll automatico verso il risultato
+    outputBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
     erroreEl.textContent = '⚠️ ' + e.message;
     erroreEl.classList.remove('hidden');
   } finally {
     btn.disabled = false;
     btn.textContent = 'Genera risposta';
+    overlay.classList.add('hidden');
+    overlay.classList.remove('flex');
   }
 }
 
