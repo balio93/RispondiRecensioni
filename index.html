@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Replica — Risposte IA alle recensioni</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen p-4">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold text-gray-800 mb-2">Replica</h1>
+    <p class="text-gray-600 mb-6">Risposte professionali e personalizzate alle recensioni dei tuoi clienti.</p>
+
+    <div class="bg-white rounded-lg shadow p-6 mb-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nome della tua attività</label>
+          <input id="nomeAttivita" type="text" placeholder="Es. Trattoria da Mario"
+            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Settore</label>
+          <select id="settore" class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="ristorazione (ristorante, pizzeria, bar, trattoria)">Ristorazione</option>
+            <option value="hotel / B&B / affittacamere">Hotel / B&B</option>
+            <option value="negozio / retail">Negozio / Retail</option>
+            <option value="studio professionale (medico, legale, commercialista, dentista)">Studio professionale</option>
+            <option value="servizi (palestra, parrucchiere, estetista, officina)">Servizi alla persona</option>
+            <option value="e-commerce / vendita online">E-commerce</option>
+            <option value="altro">Altro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Nome del recensore <span class="text-gray-400 font-normal">(opz.)</span></label>
+          <input id="nomeRecensore" type="text" placeholder="Es. Michela"
+            class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Stelle</label>
+          <select id="stelle" class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="5">★★★★★ (5)</option>
+            <option value="4">★★★★ (4)</option>
+            <option value="3">★★★ (3)</option>
+            <option value="2">★★ (2)</option>
+            <option value="1">★ (1)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tono di voce</label>
+          <select id="tono" class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="professionale e cordiale">Professionale e cordiale</option>
+            <option value="amichevole e informale">Amichevole e informale</option>
+            <option value="formale ed elegante">Formale ed elegante</option>
+            <option value="empatico e rassicurante">Empatico e rassicurante</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="block text-sm font-medium text-gray-700 mb-1">Testo della recensione</label>
+      <textarea id="recensione" rows="5" placeholder="Incolla qui la recensione del cliente..."
+        class="w-full border border-gray-300 rounded-md p-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Lunghezza</label>
+          <select id="lunghezza" class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="breve (massimo 60 parole)">Breve</option>
+            <option value="media (80-120 parole)" selected>Media</option>
+            <option value="dettagliata (150-200 parole)">Dettagliata</option>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <label class="flex items-center text-sm text-gray-700">
+            <input id="firma" type="checkbox" checked class="mr-2">
+            Includi firma finale
+          </label>
+        </div>
+      </div>
+
+      <button id="btnGenera" onclick="generaRisposta()"
+        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition">
+        Genera risposta
+      </button>
+    </div>
+
+    <div id="outputBox" class="bg-white rounded-lg shadow p-6 hidden">
+      <div class="flex justify-between items-center mb-3">
+        <h2 class="text-lg font-semibold text-gray-800">Risposta generata</h2>
+        <button onclick="copiaRisposta()" class="text-sm text-blue-600 hover:underline">Copia</button>
+      </div>
+      <p id="risultato" class="text-gray-700 whitespace-pre-wrap"></p>
+    </div>
+
+    <p id="errore" class="text-red-600 mt-3 hidden"></p>
+
+    <p class="text-xs text-gray-400 mt-6 text-center">
+      Le risposte generate sono assistive: rileggile sempre prima di pubblicarle.
+    </p>
+  </div>
+
+<script>
+async function generaRisposta() {
+  const nome = document.getElementById('nomeAttivita').value.trim();
+  const settore = document.getElementById('settore').value;
+  const nomeRecensore = document.getElementById('nomeRecensore').value.trim();
+  const stelle = parseInt(document.getElementById('stelle').value);
+  const tono = document.getElementById('tono').value;
+  const recensione = document.getElementById('recensione').value.trim();
+  const lunghezza = document.getElementById('lunghezza').value;
+  const firma = document.getElementById('firma').checked;
+  const btn = document.getElementById('btnGenera');
+  const erroreEl = document.getElementById('errore');
+  const outputBox = document.getElementById('outputBox');
+
+  erroreEl.classList.add('hidden');
+  outputBox.classList.add('hidden');
+
+  if (!nome || !recensione) {
+    erroreEl.textContent = 'Compila almeno il nome attività e la recensione.';
+    erroreEl.classList.remove('hidden');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Generazione in corso...';
+
+  try {
+    const response = await fetch('/api/genera', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nome, settore, nomeRecensore, stelle, tono, recensione, lunghezza, firma
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Errore nella generazione');
+    }
+
+    document.getElementById('risultato').textContent = data.testo;
+    outputBox.classList.remove('hidden');
+  } catch (e) {
+    erroreEl.textContent = '⚠️ ' + e.message;
+    erroreEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Genera risposta';
+  }
+}
+
+function copiaRisposta() {
+  const testo = document.getElementById('risultato').textContent;
+  navigator.clipboard.writeText(testo);
+  alert('Risposta copiata!');
+}
+</script>
+</body>
+</html>
