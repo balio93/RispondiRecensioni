@@ -2,9 +2,13 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   const apiKey = env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return json({ error: 'Chiave API non configurata sul server' }, 500);
-  }
+  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!apiKey) return json({ error: 'Chiave Gemini non configurata' }, 500);
+  if (!serviceRoleKey) return json({ error: 'Chiave Supabase non configurata' }, 500);
+
+  // Project URL Supabase (è pubblico, già visibile nel client)
+  const SUPABASE_URL = "https://htixuodbcfdvvlsipedtl.supabase.co";
 
   let body;
   try {
@@ -13,12 +17,68 @@ export async function onRequestPost(context) {
     return json({ error: 'Richiesta non valida' }, 400);
   }
 
-  const { nome, settore, nomeRecensore, stelle, tono, recensione, lunghezza, firma } = body;
+  const { nome, settore, nomeRecensore, stelle, tono, recensione, lunghezza, firma, accessToken } = body;
 
+  // === VERIFICA INPUT ===
+  if (!accessToken) {
+    return json({ error: 'Devi essere loggato per generare risposte' }, 401);
+  }
   if (!nome || !recensione) {
     return json({ error: 'Nome attività e recensione sono obbligatori' }, 400);
   }
 
+  // === VERIFICA UTENTE ===
+  let userId;
+  try {
+    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+    if (!userRes.ok) {
+      return json({ error: 'Sessione scaduta. Effettua di nuovo il login.' }, 401);
+    }
+    const userData = await userRes.json();
+    userId = userData.id;
+    if (!userId) throw new Error('no user');
+  } catch (e) {
+    return json({ error: 'Errore nella verifica della sessione. Riprova.' }, 401);
+  }
+
+  // === CONTROLLO LIMITE GIORNALIERO ===
+  const oggi = new Date().toISOString().split('T')[0];
+  const LIMITE_FREE = 3;
+
+  let usoOggi = 0;
+  try {
+    const usageRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/usage?user_id=eq.${userId}&data=eq.${oggi}&select=risposte_usate`,
+      {
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`
+        }
+      }
+    );
+    if (usageRes.ok) {
+      const rows = await usageRes.json();
+      if (rows.length > 0) usoOggi = rows[0].risposte_usate;
+    }
+  } catch (e) {
+    // Se il controllo fallisce, meglio non bloccare l'utente
+    console.error('Errore controllo usage', e);
+  }
+
+  if (usoOggi >= LIMITE_FREE) {
+    return json({
+      error: 'Hai esaurito le 3 risposte gratuite di oggi. Torna domani o passa a Pro.',
+      limiteRaggiunto: true,
+      rimanenti: 0
+    }, 429);
+  }
+
+  // === COSTRUZIONE PROMPT ===
   const istruzioniRecensore = nomeRecensore
     ? `Il recensore si chiama "${nomeRecensore}". Usa il suo nome in modo naturale, senza cognome se non è indicato.`
     : `Non conosci il nome del recensore. NON usare formule generiche come "gentile ospite", "caro cliente", "gentile utente". Inizia direttamente con il contenuto.`;
@@ -75,7 +135,9 @@ Recensione del cliente:
 
 Rispondi SOLO con il testo della risposta, senza introduzioni, titoli, commenti o virgolette.`;
 
+  // === GENERAZIONE ===
   const modelli = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash'];
+  let testo = null;
 
   for (const modello of modelli) {
     try {
@@ -85,7 +147,7 @@ Rispondi SOLO con il testo della risposta, senza introduzioni, titoli, commenti 
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-goog-api-key': apiKey  // ✅ NUOVO METODO DI AUTENTICAZIONE
+            'x-goog-api-key': apiKey
           },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }]
@@ -103,16 +165,43 @@ Rispondi SOLO con il testo della risposta, senza introduzioni, titoli, commenti 
         return json({ error: msg || 'Errore API' }, 500);
       }
 
-      const testo = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (testo) {
-        return json({ testo }, 200);
-      }
+      testo = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (testo) break;
     } catch (e) {
       continue;
     }
   }
 
-  return json({ error: 'Tutti i modelli sono momentaneamente occupati. Riprova tra 30 secondi.' }, 503);
+  if (!testo) {
+    return json({ error: 'Tutti i modelli sono momentaneamente occupati. Riprova tra 30 secondi.' }, 503);
+  }
+
+  // === INCREMENTO CONTATORE (solo dopo successo) ===
+  const nuovoUso = usoOggi + 1;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/usage?on_conflict=user_id,data`, {
+      method: 'POST',
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        data: oggi,
+        risposte_usate: nuovoUso
+      })
+    });
+  } catch (e) {
+    console.error('Errore salvataggio usage', e);
+    // Non blocchiamo l'utente se il salvataggio fallisce
+  }
+
+  return json({
+    testo,
+    rimanenti: LIMITE_FREE - nuovoUso
+  }, 200);
 }
 
 function json(obj, status) {
