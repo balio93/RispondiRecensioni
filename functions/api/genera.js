@@ -27,24 +27,32 @@ export async function onRequestPost(context) {
     return json({ error: 'Nome attività e recensione sono obbligatori' }, 400);
   }
 
-  // === VERIFICA UTENTE ===
-  let userId;
-  try {
-    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      headers: {
-        'apikey': serviceRoleKey,
-        'Authorization': `Bearer ${accessToken}`
-      }
-    });
-    if (!userRes.ok) {
-      return json({ error: 'Sessione scaduta. Effettua di nuovo il login.' }, 401);
+    // === VERIFICA UTENTE ===
+  // Decodifichiamo il JWT per estrarre l'user ID (il token è firmato da Supabase)
+  function decodeJWT(token) {
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) return null;
+      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64).split('').map(c =>
+          '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      return null;
     }
-    const userData = await userRes.json();
-    userId = userData.id;
-    if (!userId) throw new Error('no user');
-  } catch (e) {
-    return json({ error: 'Errore nella verifica della sessione. Riprova.' }, 401);
   }
+
+  const payload = decodeJWT(accessToken);
+  if (!payload || !payload.sub) {
+    return json({ error: 'Token non valido. Effettua di nuovo il login.' }, 401);
+  }
+  if (payload.exp && (payload.exp * 1000) < Date.now()) {
+    return json({ error: 'Sessione scaduta. Effettua di nuovo il login.' }, 401);
+  }
+  const userId = payload.sub;
 
   // === CONTROLLO LIMITE GIORNALIERO ===
   const oggi = new Date().toISOString().split('T')[0];
