@@ -4,11 +4,6 @@ export async function onRequestPost(context) {
   const apiKey = env.GEMINI_API_KEY;
   const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
-  console.log('DEBUG: apiKey presente?', !!apiKey);
-  console.log('DEBUG: serviceRoleKey presente?', !!serviceRoleKey);
-  console.log('DEBUG: lunghezza serviceRoleKey:', serviceRoleKey ? serviceRoleKey.length : 0);
-  console.log('DEBUG: primi 8 caratteri serviceRoleKey:', serviceRoleKey ? serviceRoleKey.substring(0, 8) : 'vuota');
-
   if (!apiKey) return json({ error: 'Chiave Gemini non configurata' }, 500);
   if (!serviceRoleKey) return json({ error: 'Chiave Supabase non configurata' }, 500);
 
@@ -30,7 +25,6 @@ export async function onRequestPost(context) {
     return json({ error: 'Nome attività e recensione sono obbligatori' }, 400);
   }
 
-  // === VERIFICA UTENTE (decodifica JWT) ===
   function decodeJWT(token) {
     try {
       const parts = token.split('.');
@@ -56,48 +50,52 @@ export async function onRequestPost(context) {
   }
   const userId = payload.sub;
 
-  console.log('DEBUG: userId estratto:', userId);
-
-  // === CONTROLLO LIMITE GIORNALIERO ===
   const oggi = new Date().toISOString().split('T')[0];
   const LIMITE_FREE = 3;
 
   let usoOggi = 0;
+  let letturaStatus = 'non eseguita';
+  let letturaErrore = null;
+  let letturaRighe = null;
+
   try {
-    const urlLettura = `${SUPABASE_URL}/rest/v1/usage?user_id=eq.${userId}&data=eq.${oggi}&select=risposte_usate`;
-    console.log('DEBUG: URL lettura:', urlLettura);
-
-    const usageRes = await fetch(urlLettura, {
-      headers: {
-        'apikey': serviceRoleKey,
-        'Authorization': `Bearer ${serviceRoleKey}`
+    const usageRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/usage?user_id=eq.${userId}&data=eq.${oggi}&select=risposte_usate`,
+      {
+        headers: {
+          'apikey': serviceRoleKey,
+          'Authorization': `Bearer ${serviceRoleKey}`
+        }
       }
-    });
-    console.log('DEBUG: lettura usage status:', usageRes.status);
-
+    );
+    letturaStatus = usageRes.status;
     if (usageRes.ok) {
-      const rows = await usageRes.json();
-      console.log('DEBUG: righe trovate:', JSON.stringify(rows));
-      if (rows.length > 0) usoOggi = rows[0].risposte_usate;
+      letturaRighe = await usageRes.json();
+      if (letturaRighe.length > 0) usoOggi = letturaRighe[0].risposte_usate;
     } else {
-      const errText = await usageRes.text();
-      console.log('DEBUG: errore lettura:', errText);
+      letturaErrore = await usageRes.text();
     }
   } catch (e) {
-    console.log('DEBUG: eccezione lettura:', e.message);
+    letturaErrore = e.message;
   }
-
-  console.log('DEBUG: usoOggi:', usoOggi);
 
   if (usoOggi >= LIMITE_FREE) {
     return json({
       error: 'Hai esaurito le 3 risposte gratuite di oggi. Torna domani o passa a Pro.',
       limiteRaggiunto: true,
-      rimanenti: 0
+      rimanenti: 0,
+      _debug: {
+        userId,
+        usoOggi,
+        letturaStatus,
+        letturaErrore,
+        letturaRighe,
+        serviceRoleKeyLength: serviceRoleKey.length,
+        serviceRoleKeyPrefix: serviceRoleKey.substring(0, 6)
+      }
     }, 429);
   }
 
-  // === COSTRUZIONE PROMPT ===
   const istruzioniRecensore = nomeRecensore
     ? `Il recensore si chiama "${nomeRecensore}". Usa il suo nome in modo naturale, senza cognome se non è indicato.`
     : `Non conosci il nome del recensore. NON usare formule generiche come "gentile ospite", "caro cliente", "gentile utente". Inizia direttamente con il contenuto.`;
@@ -154,7 +152,6 @@ Recensione del cliente:
 
 Rispondi SOLO con il testo della risposta, senza introduzioni, titoli, commenti o virgolette.`;
 
-  // === GENERAZIONE ===
   const modelli = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-2.5-flash'];
   let testo = null;
 
@@ -195,14 +192,12 @@ Rispondi SOLO con il testo della risposta, senza introduzioni, titoli, commenti 
     return json({ error: 'Tutti i modelli sono momentaneamente occupati. Riprova tra 30 secondi.' }, 503);
   }
 
-  // === INCREMENTO CONTATORE ===
   const nuovoUso = usoOggi + 1;
-  try {
-    const urlSalvataggio = `${SUPABASE_URL}/rest/v1/usage?on_conflict=user_id,data`;
-    console.log('DEBUG: URL salvataggio:', urlSalvataggio);
-    console.log('DEBUG: body salvataggio:', JSON.stringify([{ user_id: userId, data: oggi, risposte_usate: nuovoUso }]));
+  let saveStatus = 'non eseguito';
+  let saveError = null;
 
-    const saveRes = await fetch(urlSalvataggio, {
+  try {
+    const saveRes = await fetch(`${SUPABASE_URL}/rest/v1/usage?on_conflict=user_id,data`, {
       method: 'POST',
       headers: {
         'apikey': serviceRoleKey,
@@ -217,18 +212,29 @@ Rispondi SOLO con il testo della risposta, senza introduzioni, titoli, commenti 
       }])
     });
 
-    console.log('DEBUG: risposta salvataggio status:', saveRes.status);
+    saveStatus = saveRes.status;
     if (!saveRes.ok) {
-      const errText = await saveRes.text();
-      console.log('DEBUG: errore salvataggio:', saveRes.status, errText);
+      saveError = await saveRes.text();
     }
   } catch (e) {
-    console.log('DEBUG: eccezione salvataggio:', e.message);
+    saveError = e.message;
   }
 
   return json({
     testo,
-    rimanenti: LIMITE_FREE - nuovoUso
+    rimanenti: LIMITE_FREE - nuovoUso,
+    _debug: {
+      userId,
+      usoOggi,
+      nuovoUso,
+      letturaStatus,
+      letturaErrore,
+      letturaRighe,
+      saveStatus,
+      saveError,
+      serviceRoleKeyLength: serviceRoleKey.length,
+      serviceRoleKeyPrefix: serviceRoleKey.substring(0, 6)
+    }
   }, 200);
 }
 
