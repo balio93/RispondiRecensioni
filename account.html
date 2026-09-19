@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Il tuo account — Replica</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+  <!-- HEADER -->
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+    <div class="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
+      <a href="index.html" class="text-xl font-bold text-gray-800">Replica</a>
+      <nav class="flex items-center gap-4 text-sm">
+        <a href="app.html" class="text-gray-600 hover:text-gray-800">Genera risposta</a>
+        <a href="account.html" class="text-gray-800 font-medium">Account</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="flex-grow px-4 py-12">
+    <div class="max-w-3xl mx-auto">
+
+      <!-- INFO ACCOUNT -->
+      <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h1 class="text-2xl font-bold text-gray-800 mb-4">Il tuo account</h1>
+        <div class="flex justify-between items-center py-3 border-b border-gray-100">
+          <span class="text-sm text-gray-500">Email</span>
+          <span id="emailUtente" class="text-sm font-medium text-gray-800">utente@email.com</span>
+        </div>
+        <div class="flex justify-between items-center py-3 border-b border-gray-100">
+          <span class="text-sm text-gray-500">Piano attivo</span>
+          <span id="pianoAttivo" class="text-sm font-semibold text-gray-600 bg-gray-100 px-3 py-1 rounded-full">Free</span>
+        </div>
+        <div class="flex justify-between items-center py-3">
+          <span class="text-sm text-gray-500">Risposte usate oggi</span>
+          <span id="risposteOggi" class="text-sm font-medium text-gray-800">0 / 3</span>
+        </div>
+      </div>
+
+      <!-- UPGRADE -->
+      <div id="cardUpgrade" class="bg-white rounded-lg shadow p-6 mb-6 border-2 border-blue-600">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-800 mb-1">Passa a Pro</h2>
+            <p class="text-sm text-gray-500">Risposte illimitate, priorità e supporto.</p>
+          </div>
+          <span class="bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">Consigliato</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div class="border border-gray-200 rounded-lg p-4">
+            <p class="text-sm font-semibold text-gray-800 mb-1">Mensile</p>
+            <p class="text-2xl font-bold text-gray-800">4,90€ <span class="text-sm font-normal text-gray-500">primo mese</span></p>
+            <p class="text-xs text-gray-400 mb-3">Poi 9€/mese</p>
+            <button onclick="attivaPro('mensile')"
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-md transition">
+              Attiva mensile
+            </button>
+          </div>
+          <div class="border border-gray-200 rounded-lg p-4">
+            <p class="text-sm font-semibold text-gray-800 mb-1">Annuale</p>
+            <p class="text-2xl font-bold text-gray-800">89€ <span class="text-sm font-normal text-gray-500">/anno</span></p>
+            <p class="text-xs text-gray-400 mb-3">Risparmi 19€</p>
+            <button onclick="attivaPro('annuale')"
+              class="w-full border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-semibold py-2 px-4 rounded-md transition">
+              Attiva annuale
+            </button>
+          </div>
+        </div>
+        <p class="text-xs text-gray-400 text-center">
+          Pagamento sicuro tramite PayPal · Disdici quando vuoi
+        </p>
+      </div>
+
+      <!-- LOGOUT -->
+      <div class="text-center">
+        <button onclick="logout()" class="text-sm text-gray-500 hover:text-gray-700 underline">
+          Esci dal tuo account
+        </button>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="bg-gray-100 border-t border-gray-200 py-6 px-4">
+    <div class="max-w-3xl mx-auto text-center text-xs text-gray-500">
+      <a href="privacy.html" class="hover:underline">Privacy</a>
+      <span class="mx-2">·</span>
+      <a href="cookie.html" class="hover:underline">Cookie</a>
+      <span class="mx-2">·</span>
+      © 2026 Replica
+    </div>
+  </footer>
+
+<script>
+// ⚠️ Logica account, upgrade e logout: arriveranno nello Step 2/3/4
+function attivaPro(tipo) {
+  alert('La funzione di pagamento sarà attivata a breve. Hai scelto il piano ' + tipo + '.');
+}
+
+function logout() {
+  alert('La funzione di logout sarà attivata a breve.');
+}
+</script>
+</body>
+</html>
