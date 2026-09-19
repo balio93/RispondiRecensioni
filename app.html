@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -35,12 +35,10 @@
     </div>
   </header>
 
-  <!-- Loading iniziale (mentre controlliamo la sessione) -->
   <div id="authCheck" class="flex items-center justify-center py-20">
     <div class="spinner"></div>
   </div>
 
-  <!-- Contenuto principale (nascosto finché non verifichiamo il login) -->
   <div id="contenuto" class="hidden">
 
     <div id="bannerLimite" class="hidden bg-blue-50 border-b border-blue-200">
@@ -155,11 +153,13 @@
   </div>
 
 <script>
-// ⚠️ SOSTITUISCI QUESTI DUE VALORI CON I TUOI (gli stessi di signup.html)
+// ⚠️ SOSTITUISCI QUESTI DUE VALORI CON I TUOI
 const SUPABASE_URL = "https://htixuodbcfdvvlspedtl.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0aXh1b2RiY2ZkdnZsc3BlZHRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3NjE3NjIsImV4cCI6MjEwNTMzNzc2Mn0.Kw1D3_7U8Y5vUcEeJen9aoLQmUGHVzlUEpSWTodBpp4";
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let accessToken = null;
 
 // === CONTROLLO SESSIONE ===
 (async () => {
@@ -168,9 +168,8 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     window.location.href = 'login.html';
     return;
   }
-  // Mostra email utente
+  accessToken = session.access_token;
   document.getElementById('emailUtente').textContent = session.user.email;
-  // Nascondi loading, mostra contenuto
   document.getElementById('authCheck').classList.add('hidden');
   document.getElementById('contenuto').classList.remove('hidden');
 })();
@@ -188,9 +187,12 @@ async function generaRisposta() {
   const erroreEl = document.getElementById('errore');
   const outputBox = document.getElementById('outputBox');
   const overlay = document.getElementById('loadingOverlay');
+  const banner = document.getElementById('bannerLimite');
+  const bannerTesto = document.getElementById('bannerTesto');
 
   erroreEl.classList.add('hidden');
   outputBox.classList.add('hidden');
+  banner.classList.add('hidden');
 
   if (!nome || !recensione) {
     erroreEl.textContent = 'Compila almeno il nome attività e la recensione.';
@@ -208,11 +210,22 @@ async function generaRisposta() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        nome, settore, nomeRecensore, stelle, tono, recensione, lunghezza, firma
+        nome, settore, nomeRecensore, stelle, tono, recensione, lunghezza, firma,
+        accessToken
       })
     });
 
     const data = await response.json();
+
+    // Se limite raggiunto (429), mostra il banner gentile
+    if (response.status === 429 && data.limiteRaggiunto) {
+      bannerTesto.textContent = '👉 ' + data.error;
+      banner.classList.remove('hidden');
+      document.getElementById('contatore').textContent = '0';
+      btn.disabled = true;
+      btn.textContent = 'Limite giornaliero raggiunto';
+      return;
+    }
 
     if (!response.ok) {
       throw new Error(data.error || 'Errore nella generazione');
@@ -221,6 +234,15 @@ async function generaRisposta() {
     document.getElementById('risultato').textContent = data.testo;
     outputBox.classList.remove('hidden');
     outputBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Aggiorna contatore con il valore reale dal server
+    if (typeof data.rimanenti === 'number') {
+      document.getElementById('contatore').textContent = data.rimanenti;
+      if (data.rimanenti === 0) {
+        bannerTesto.textContent = '👉 Hai esaurito le 3 risposte gratuite di oggi. Torna domani o passa a Pro.';
+        banner.classList.remove('hidden');
+      }
+    }
   } catch (e) {
     erroreEl.textContent = '⚠️ ' + e.message;
     erroreEl.classList.remove('hidden');
