@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Accedi — Replica</title>
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-gray-50 min-h-screen flex flex-col">
 
@@ -32,8 +33,8 @@
               class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
           </div>
 
-          <button type="submit"
-            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition">
+          <button id="btnSubmit" type="submit"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed">
             Accedi
           </button>
 
@@ -53,12 +54,56 @@
   </main>
 
 <script>
-// ⚠️ La logica di login arriverà nello Step 2
-document.getElementById('loginForm').addEventListener('submit', function(e) {
+// ⚠️ SOSTITUISCI QUESTI DUE VALORI CON I TUOI (gli stessi di signup.html)
+const SUPABASE_URL = "https://htixuodbcfdvvlspedtl.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0aXh1b2RiY2ZkdnZsc3BlZHRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3NjE3NjIsImV4cCI6MjEwNTMzNzc2Mn0.Kw1D3_7U8Y5vUcEeJen9aoLQmUGHVzlUEpSWTodBpp4";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const form = document.getElementById('loginForm');
+const btn = document.getElementById('btnSubmit');
+const msg = document.getElementById('messaggio');
+
+// Se l'utente è già loggato, mandalo direttamente a app.html
+(async () => {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) {
+    window.location.href = 'app.html';
+  }
+})();
+
+form.addEventListener('submit', async function(e) {
   e.preventDefault();
-  const msg = document.getElementById('messaggio');
-  msg.textContent = 'La funzione di login sarà attivata a breve.';
-  msg.className = 'text-sm text-center text-blue-600 mt-2';
+
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+
+  msg.classList.add('hidden');
+  btn.disabled = true;
+  btn.textContent = 'Accesso in corso...';
+
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+
+    if (error) throw error;
+
+    window.location.href = 'app.html';
+  } catch (err) {
+    let messaggio = err.message;
+    if (messaggio.includes('Invalid login credentials')) {
+      messaggio = 'Email o password non corretti.';
+    } else if (messaggio.includes('Email not confirmed')) {
+      messaggio = 'Devi prima confermare la tua email. Controlla la casella.';
+    }
+    msg.textContent = messaggio;
+    msg.className = 'text-sm text-center mt-2 text-red-600';
+    msg.classList.remove('hidden');
+    btn.disabled = false;
+    btn.textContent = 'Accedi';
+  }
 });
 </script>
 </body>
