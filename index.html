@@ -6,18 +6,6 @@
 <title>Replica — Risposte IA alle recensioni</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  .spinner {
-    border: 4px solid #e5e7eb;
-    border-top: 4px solid #2563eb;
-    border-radius: 50%;
-    width: 48px;
-    height: 48px;
-    animation: spin 1s linear infinite;
-  }
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
   html { scroll-behavior: smooth; }
 </style>
 </head>
@@ -25,143 +13,105 @@
 
   <!-- HEADER -->
   <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
-    <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
-      <span class="text-xl font-bold text-gray-800">Replica</span>
-      <a href="#prezzi" class="text-sm text-blue-600 hover:underline">Prezzi</a>
+    <div class="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
+      <a href="index.html" class="text-xl font-bold text-gray-800">Replica</a>
+      <nav class="flex items-center gap-4 text-sm">
+        <a href="#come-funziona" class="text-gray-600 hover:text-gray-800 hidden md:inline">Come funziona</a>
+        <a href="#prezzi" class="text-gray-600 hover:text-gray-800 hidden md:inline">Prezzi</a>
+        <a href="login.html" class="text-gray-600 hover:text-gray-800">Accedi</a>
+        <a href="signup.html" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition">Prova gratis</a>
+      </nav>
     </div>
   </header>
 
   <!-- HERO -->
   <section class="bg-white border-b border-gray-200">
-    <div class="max-w-3xl mx-auto px-4 py-12 text-center">
-      <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
+    <div class="max-w-3xl mx-auto px-4 py-16 text-center">
+      <h1 class="text-3xl md:text-5xl font-bold text-gray-800 mb-6">
         Rispondi alle recensioni in 10 secondi
       </h1>
-      <p class="text-lg text-gray-600 mb-8">
+      <p class="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
         Replica genera risposte professionali e personalizzate per Google, TripAdvisor, Booking e ogni portale. Nella lingua del cliente, con il tono giusto per ogni situazione.
       </p>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-        <div class="bg-gray-50 rounded-lg p-4">
-          <p class="font-semibold text-gray-800 mb-1">Su misura</p>
-          <p class="text-sm text-gray-600">Tono e contenuto si adattano alle stelle e al tuo settore.</p>
-        </div>
-        <div class="bg-gray-50 rounded-lg p-4">
-          <p class="font-semibold text-gray-800 mb-1">Multilingua</p>
-          <p class="text-sm text-gray-600">Rispondi ai clienti stranieri nella loro lingua.</p>
-        </div>
-        <div class="bg-gray-50 rounded-lg p-4">
-          <p class="font-semibold text-gray-800 mb-1">Autentica</p>
-          <p class="text-sm text-gray-600">Niente frasi fatte: solo risposte che suonano umane.</p>
-        </div>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <a href="signup.html" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-md transition">
+          Prova gratis — 3 risposte al giorno
+        </a>
+        <a href="#come-funziona" class="border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold py-3 px-6 rounded-md transition">
+          Scopri come funziona
+        </a>
       </div>
-      <a href="#tool" class="inline-block mt-8 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-md transition">
-        Prova gratis
-      </a>
+      <p class="text-xs text-gray-400 mt-4">Nessuna carta di credito richiesta</p>
     </div>
   </section>
 
-  <!-- TOOL -->
-  <section id="tool" class="py-10 px-4">
-    <div class="max-w-2xl mx-auto">
-      <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Genera la tua risposta</h2>
-
-      <div class="bg-white rounded-lg shadow p-6 mb-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nome della tua attività</label>
-            <input id="nomeAttivita" type="text" placeholder="Es. Trattoria da Mario"
-              class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Settore</label>
-            <select id="settore" class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="ristorazione (ristorante, pizzeria, bar, trattoria)">Ristorazione</option>
-              <option value="hotel / B&B / affittacamere">Hotel / B&B</option>
-              <option value="negozio / retail">Negozio / Retail</option>
-              <option value="studio professionale (medico, legale, commercialista, dentista)">Studio professionale</option>
-              <option value="servizi (palestra, parrucchiere, estetista, officina)">Servizi alla persona</option>
-              <option value="e-commerce / vendita online">E-commerce</option>
-              <option value="altro">Altro</option>
-            </select>
-          </div>
+  <!-- VANTAGGI -->
+  <section class="py-16 px-4">
+    <div class="max-w-5xl mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="text-center">
+          <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">1</div>
+          <h3 class="font-semibold text-gray-800 mb-2">Su misura</h3>
+          <p class="text-sm text-gray-600">Tono e contenuto si adattano alle stelle e al tuo settore. Una recensione da 1 stella non si risponde come una da 5.</p>
         </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nome del recensore <span class="text-gray-400 font-normal">(opz.)</span></label>
-            <input id="nomeRecensore" type="text" placeholder="Es. Michela"
-              class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Stelle</label>
-            <select id="stelle" class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="5">★★★★★ (5)</option>
-              <option value="4">★★★★ (4)</option>
-              <option value="3">★★★ (3)</option>
-              <option value="2">★★ (2)</option>
-              <option value="1">★ (1)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tono di voce</label>
-            <select id="tono" class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="professionale e cordiale">Professionale e cordiale</option>
-              <option value="amichevole e informale">Amichevole e informale</option>
-              <option value="formale ed elegante">Formale ed elegante</option>
-              <option value="empatico e rassicurante">Empatico e rassicurante</option>
-            </select>
-          </div>
+        <div class="text-center">
+          <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">2</div>
+          <h3 class="font-semibold text-gray-800 mb-2">Multilingua</h3>
+          <p class="text-sm text-gray-600">Rispondi nella lingua del cliente. Perfetto per hotel, B&B e ristoranti con clientela internazionale.</p>
         </div>
-
-        <label class="block text-sm font-medium text-gray-700 mb-1">Testo della recensione</label>
-        <textarea id="recensione" rows="5" placeholder="Incolla qui la recensione del cliente..."
-          class="w-full border border-gray-300 rounded-md p-2 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-
-        <div class="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Lunghezza</label>
-            <select id="lunghezza" class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="breve (massimo 60 parole)">Breve</option>
-              <option value="media (80-120 parole)" selected>Media</option>
-              <option value="dettagliata (150-200 parole)">Dettagliata</option>
-            </select>
-          </div>
-          <div class="flex items-end">
-            <label class="flex items-center text-sm text-gray-700">
-              <input id="firma" type="checkbox" checked class="mr-2">
-              Includi firma finale
-            </label>
-          </div>
+        <div class="text-center">
+          <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">3</div>
+          <h3 class="font-semibold text-gray-800 mb-2">Autentica</h3>
+          <p class="text-sm text-gray-600">Niente frasi fatte o risposte standardizzate. Solo testi che suonano umani e specifici.</p>
         </div>
-
-        <button id="btnGenera" onclick="generaRisposta()"
-          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed">
-          Genera risposta
-        </button>
       </div>
+    </div>
+  </section>
 
-      <div id="outputBox" class="bg-white rounded-lg shadow p-6 hidden">
-        <div class="flex justify-between items-center mb-3">
-          <h2 class="text-lg font-semibold text-gray-800">Risposta generata</h2>
-          <button onclick="copiaRisposta()" class="text-sm text-blue-600 hover:underline">Copia</button>
+  <!-- COME FUNZIONA -->
+  <section id="come-funziona" class="bg-white border-t border-gray-200 py-16 px-4">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-2xl font-bold text-gray-800 mb-10 text-center">Come funziona</h2>
+      <div class="space-y-6">
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">1</div>
+          <div>
+            <p class="font-semibold text-gray-800">Registrati gratis</p>
+            <p class="text-sm text-gray-600">Bastano email e password. Nessuna carta di credito.</p>
+          </div>
         </div>
-        <p id="risultato" class="text-gray-700 whitespace-pre-wrap"></p>
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">2</div>
+          <div>
+            <p class="font-semibold text-gray-800">Incolla la recensione</p>
+            <p class="text-sm text-gray-600">Scegli le stelle, il tono, e incolla il testo del cliente.</p>
+          </div>
+        </div>
+        <div class="flex gap-4">
+          <div class="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">3</div>
+          <div>
+            <p class="font-semibold text-gray-800">Copia e pubblica</p>
+            <p class="text-sm text-gray-600">Replica genera la risposta in pochi secondi. Tu la rileggi, la personalizzi e la pubblichi.</p>
+          </div>
+        </div>
       </div>
-
-      <p id="errore" class="text-red-600 mt-3 hidden"></p>
+      <div class="text-center mt-10">
+        <a href="signup.html" class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-md transition">
+          Inizia ora — è gratis
+        </a>
+      </div>
     </div>
   </section>
 
   <!-- PREZZI -->
-  <section id="prezzi" class="py-12 px-4 bg-white border-t border-gray-200">
+  <section id="prezzi" class="py-16 px-4">
     <div class="max-w-5xl mx-auto">
       <h2 class="text-2xl font-bold text-gray-800 mb-2 text-center">Prezzi semplici, senza sorprese</h2>
       <p class="text-center text-gray-500 text-sm mb-10">Nessun rinnovo nascosto. Disdici quando vuoi.</p>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        <!-- FREE -->
-        <div class="border border-gray-200 rounded-lg p-6 flex flex-col">
+        <div class="bg-white border border-gray-200 rounded-lg p-6 flex flex-col">
           <p class="text-lg font-semibold text-gray-800 mb-1">Free</p>
           <p class="text-3xl font-bold text-gray-800 mb-2">0€</p>
           <p class="text-xs text-gray-400 mb-4">per sempre</p>
@@ -171,13 +121,12 @@
             <li>✓ Risposte multilingua</li>
             <li>✓ Tutti i toni di voce</li>
           </ul>
-          <a href="#tool" class="block text-center border border-blue-600 text-blue-600 font-semibold py-2 px-4 rounded-md hover:bg-blue-50 transition">
+          <a href="signup.html" class="block text-center border border-blue-600 text-blue-600 font-semibold py-2 px-4 rounded-md hover:bg-blue-50 transition">
             Inizia gratis
           </a>
         </div>
 
-        <!-- PRO MENSILE -->
-        <div class="border-2 border-blue-600 rounded-lg p-6 relative flex flex-col">
+        <div class="bg-white border-2 border-blue-600 rounded-lg p-6 relative flex flex-col">
           <span class="absolute top-0 right-6 -translate-y-1/2 bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">Consigliato</span>
           <p class="text-lg font-semibold text-gray-800 mb-1">Pro mensile</p>
           <div class="mb-2">
@@ -192,13 +141,12 @@
             <li>✓ Supporto via email</li>
             <li>✓ Nuove funzioni in anteprima</li>
           </ul>
-          <a href="mailto:tuoindirizzo@email.com?subject=Voglio%20attivare%20Replica%20Pro%20mensile" class="block text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition">
+          <a href="signup.html" class="block text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition">
             Prova Pro a 4,90€
           </a>
         </div>
 
-        <!-- PRO ANNUALE -->
-        <div class="border border-gray-200 rounded-lg p-6 flex flex-col">
+        <div class="bg-white border border-gray-200 rounded-lg p-6 flex flex-col">
           <p class="text-lg font-semibold text-gray-800 mb-1">Pro annuale</p>
           <div class="mb-2">
             <span class="text-sm text-gray-400 line-through">108€</span>
@@ -212,7 +160,7 @@
             <li>✓ Prezzo bloccato per 12 mesi</li>
             <li>✓ Supporto prioritario</li>
           </ul>
-          <a href="mailto:tuoindirizzo@email.com?subject=Voglio%20attivare%20Replica%20Pro%20annuale" class="block text-center border border-blue-600 text-blue-600 font-semibold py-2 px-4 rounded-md hover:bg-blue-50 transition">
+          <a href="signup.html" class="block text-center border border-blue-600 text-blue-600 font-semibold py-2 px-4 rounded-md hover:bg-blue-50 transition">
             Risparmia con l'annuale
           </a>
         </div>
@@ -220,7 +168,7 @@
       </div>
 
       <p class="text-xs text-gray-400 text-center mt-8">
-        Pagamento sicuro tramite PayPal · Nessuna carta richiesta sul sito · Disdici in qualsiasi momento dal tuo account PayPal
+        Pagamento sicuro tramite PayPal · Nessuna carta richiesta sul sito
       </p>
     </div>
   </section>
@@ -240,76 +188,5 @@
     </div>
   </footer>
 
-  <!-- OVERLAY CARICAMENTO -->
-  <div id="loadingOverlay" class="hidden fixed inset-0 bg-white bg-opacity-80 items-center justify-center flex-col z-50">
-    <div class="spinner mb-4"></div>
-    <p class="text-gray-700 font-medium">Sto generando la risposta...</p>
-    <p class="text-gray-400 text-sm mt-1">Ci vogliono pochi secondi</p>
-  </div>
-
-<script>
-async function generaRisposta() {
-  const nome = document.getElementById('nomeAttivita').value.trim();
-  const settore = document.getElementById('settore').value;
-  const nomeRecensore = document.getElementById('nomeRecensore').value.trim();
-  const stelle = parseInt(document.getElementById('stelle').value);
-  const tono = document.getElementById('tono').value;
-  const recensione = document.getElementById('recensione').value.trim();
-  const lunghezza = document.getElementById('lunghezza').value;
-  const firma = document.getElementById('firma').checked;
-  const btn = document.getElementById('btnGenera');
-  const erroreEl = document.getElementById('errore');
-  const outputBox = document.getElementById('outputBox');
-  const overlay = document.getElementById('loadingOverlay');
-
-  erroreEl.classList.add('hidden');
-  outputBox.classList.add('hidden');
-
-  if (!nome || !recensione) {
-    erroreEl.textContent = 'Compila almeno il nome attività e la recensione.';
-    erroreEl.classList.remove('hidden');
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Generazione in corso...';
-  overlay.classList.remove('hidden');
-  overlay.classList.add('flex');
-
-  try {
-    const response = await fetch('/api/genera', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        nome, settore, nomeRecensore, stelle, tono, recensione, lunghezza, firma
-      })
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Errore nella generazione');
-    }
-
-    document.getElementById('risultato').textContent = data.testo;
-    outputBox.classList.remove('hidden');
-    outputBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  } catch (e) {
-    erroreEl.textContent = '⚠️ ' + e.message;
-    erroreEl.classList.remove('hidden');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Genera risposta';
-    overlay.classList.add('hidden');
-    overlay.classList.remove('flex');
-  }
-}
-
-function copiaRisposta() {
-  const testo = document.getElementById('risultato').textContent;
-  navigator.clipboard.writeText(testo);
-  alert('Risposta copiata!');
-}
-</script>
 </body>
 </html>
