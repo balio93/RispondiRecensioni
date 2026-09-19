@@ -166,6 +166,10 @@ function oggiStringa() {
   return new Date().toISOString().split('T')[0];
 }
 
+function leggiRimanenti() {
+  return parseInt(document.getElementById('contatore').textContent) || 0;
+}
+
 (async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (!session) {
@@ -232,6 +236,12 @@ async function incrementaContatore() {
     }
 
     const usate = esistente ? esistente.risposte_usate : 0;
+    // Blocco di sicurezza: non incrementare oltre il limite
+    if (usate >= LIMITE_FREE) {
+      document.getElementById('contatore').textContent = '0';
+      mostraBannerLimite();
+      return;
+    }
     const nuove = usate + 1;
 
     if (esistente) {
@@ -263,6 +273,12 @@ async function incrementaContatore() {
 }
 
 async function generaRisposta() {
+  // Blocco di sicurezza: se il contatore è a 0, non procedere
+  if (leggiRimanenti() <= 0) {
+    mostraBannerLimite();
+    return;
+  }
+
   const nome = document.getElementById('nomeAttivita').value.trim();
   const settore = document.getElementById('settore').value;
   const nomeRecensore = document.getElementById('nomeRecensore').value.trim();
@@ -315,10 +331,14 @@ async function generaRisposta() {
     erroreEl.textContent = '⚠️ ' + e.message;
     erroreEl.classList.remove('hidden');
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Genera risposta';
     overlay.classList.add('hidden');
     overlay.classList.remove('flex');
+
+    // Riabilita il pulsante SOLO se ci sono ancora risposte disponibili
+    if (leggiRimanenti() > 0) {
+      btn.disabled = false;
+      btn.textContent = 'Genera risposta';
+    }
   }
 }
 
