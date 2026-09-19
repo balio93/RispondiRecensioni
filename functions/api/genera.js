@@ -80,10 +80,13 @@ Rispondi SOLO con il testo della risposta, senza introduzioni, titoli, commenti 
   for (const modello of modelli) {
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${modello}:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${modello}:generateContent`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey  // ✅ NUOVO METODO DI AUTENTICAZIONE
+          },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }]
           })
