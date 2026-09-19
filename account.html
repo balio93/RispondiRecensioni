@@ -38,6 +38,7 @@
   <main id="contenuto" class="hidden flex-grow px-4 py-12">
     <div class="max-w-3xl mx-auto">
 
+      <!-- INFO ACCOUNT -->
       <div class="bg-white rounded-lg shadow p-6 mb-6">
         <h1 class="text-2xl font-bold text-gray-800 mb-4">Il tuo account</h1>
         <div class="flex justify-between items-center py-3 border-b border-gray-100">
@@ -54,7 +55,7 @@
         </div>
       </div>
 
-      <!-- Sezione Pro attivo (mostrata solo se l'utente è Pro) -->
+      <!-- CARD PRO (visibile solo se Pro) -->
       <div id="cardPro" class="hidden bg-white rounded-lg shadow p-6 mb-6 border-2 border-green-600">
         <div class="flex items-center gap-3 mb-3">
           <span class="text-2xl">✅</span>
@@ -68,23 +69,41 @@
         </div>
       </div>
 
-      <!-- Sezione upgrade (mostrata solo se l'utente NON è Pro) -->
+      <!-- CARD UPGRADE (visibile solo se Free) -->
       <div id="cardUpgrade" class="hidden bg-white rounded-lg shadow p-6 mb-6 border-2 border-blue-600">
-        <div class="flex justify-between items-start mb-4">
-          <div>
-            <h2 class="text-lg font-semibold text-gray-800 mb-1">Passa a Pro</h2>
-            <p class="text-sm text-gray-500">Risposte illimitate, priorità e supporto.</p>
+        <div class="mb-5">
+          <h2 class="text-lg font-semibold text-gray-800 mb-1">Passa a Pro</h2>
+          <p class="text-sm text-gray-500">Risposte illimitate, priorità e supporto. Disdici quando vuoi.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+
+          <!-- Piano Mensile -->
+          <div class="border border-gray-200 rounded-lg p-4 relative">
+            <span class="absolute -top-3 left-4 bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">Consigliato</span>
+            <p class="text-sm font-semibold text-gray-800 mb-2 mt-2">Piano Mensile</p>
+            <div class="mb-3">
+              <span class="text-sm text-gray-400 line-through">9€</span>
+              <span class="text-2xl font-bold text-gray-800 ml-2">4,90€</span>
+              <span class="text-xs font-normal text-gray-500">/primo mese</span>
+            </div>
+            <p class="text-xs text-gray-500 mb-4">Poi 9€/mese, disdici quando vuoi</p>
+            <div id="paypal-button-mensile"></div>
           </div>
-          <span class="bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">Consigliato</span>
-        </div>
 
-        <div class="bg-blue-50 rounded-lg p-4 mb-4">
-          <p class="text-sm font-semibold text-gray-800 mb-1">Piano Pro Mensile</p>
-          <p class="text-2xl font-bold text-gray-800">4,90€ <span class="text-sm font-normal text-gray-500">primo mese</span></p>
-          <p class="text-xs text-gray-500 mb-0">Poi 9€/mese · disdici quando vuoi dal tuo account PayPal</p>
-        </div>
+          <!-- Piano Annuale -->
+          <div class="border border-gray-200 rounded-lg p-4">
+            <p class="text-sm font-semibold text-gray-800 mb-2 mt-2">Piano Annuale</p>
+            <div class="mb-3">
+              <span class="text-sm text-gray-400 line-through">108€</span>
+              <span class="text-2xl font-bold text-gray-800 ml-2">89€</span>
+              <span class="text-xs font-normal text-gray-500">/anno</span>
+            </div>
+            <p class="text-xs text-gray-500 mb-4">Risparmi 19€ · 2 mesi gratis</p>
+            <div id="paypal-button-annuale"></div>
+          </div>
 
-        <div id="paypal-button-container-P-8GW62177MN2667141NKXNGDI"></div>
+        </div>
 
         <div id="messaggioPagamento" class="hidden text-sm text-center mt-4"></div>
 
@@ -138,10 +157,10 @@ function oggiStringa() {
 
   await caricaStatoAccount();
   await caricaContatore();
-  await initPayPal();
+  await initPayPalButtons();
 })();
 
-// === STATO ACCOUNT (FREE o PRO) ===
+// === STATO ACCOUNT ===
 async function caricaStatoAccount() {
   try {
     const { data, error } = await supabaseClient
@@ -157,13 +176,11 @@ async function caricaStatoAccount() {
     }
 
     if (data) {
-      // Utente PRO
       document.getElementById('pianoAttivo').textContent = 'Pro';
       document.getElementById('pianoAttivo').className = 'text-sm font-semibold text-green-700 bg-green-100 px-3 py-1 rounded-full';
       document.getElementById('cardPro').classList.remove('hidden');
       document.getElementById('subId').textContent = data.subscription_id;
     } else {
-      // Utente FREE
       document.getElementById('cardUpgrade').classList.remove('hidden');
     }
   } catch (e) {
@@ -190,63 +207,72 @@ async function caricaContatore() {
   }
 }
 
-// === PULSANTE PAYPAL ===
-async function initPayPal() {
-  // Se l'utente è Pro, non mostrare il pulsante PayPal
+// === PULSANTI PAYPAL ===
+async function initPayPalButtons() {
   const cardUpgrade = document.getElementById('cardUpgrade');
   if (cardUpgrade.classList.contains('hidden')) return;
 
-  // Aspetta che PayPal SDK sia pronto
   if (typeof paypal === 'undefined') {
-    setTimeout(initPayPal, 500);
+    setTimeout(initPayPalButtons, 500);
     return;
   }
 
+  // Pulsante Mensile
   paypal.Buttons({
-    style: {
-      shape: 'rect',
-      color: 'gold',
-      layout: 'vertical',
-      label: 'subscribe'
-    },
+    style: { shape: 'rect', color: 'gold', layout: 'vertical', label: 'subscribe' },
     createSubscription: function(data, actions) {
-      return actions.subscription.create({
-        plan_id: 'P-8GW62177MN2667141NKXNGDI'
-      });
+      return actions.subscription.create({ plan_id: 'P-8GW62177MN2667141NKXNGDI' });
     },
     onApprove: async function(data, actions) {
-      const subscriptionID = data.subscriptionID;
-      console.log('Abbonamento approvato:', subscriptionID);
-
-      // Salva l'abbonamento su Supabase
-      try {
-        const { error } = await supabaseClient
-          .from('subscriptions')
-          .insert({
-            user_id: currentUser.id,
-            subscription_id: subscriptionID,
-            plan: 'pro_mensile',
-            status: 'active'
-          });
-
-        if (error) {
-          console.error('Errore salvataggio subscription:', error);
-          mostraMessaggio('Abbonamento attivato ma errore nel salvataggio. Contatta il supporto con ID: ' + subscriptionID, 'errore');
-          return;
-        }
-
-        mostraMessaggio('🎉 Abbonamento attivato! Ricarico...', 'successo');
-        setTimeout(() => window.location.reload(), 2000);
-      } catch (e) {
-        console.error('Eccezione salvataggio:', e);
-        mostraMessaggio('Errore: ' + e.message, 'errore');
-      }
+      await salvaAbbonamento(data.subscriptionID, 'pro_mensile');
     },
     onError: function(err) {
-      console.error('Errore PayPal:', err);
+      console.error('Errore PayPal mensile:', err);
       mostraMessaggio('Errore nel pagamento. Riprova o contattaci.', 'errore');
     }
-  }).render('#paypal-button-container-P-8GW62177MN2667141NKXNGDI');
+  }).render('#paypal-button-mensile');
+
+  // Pulsante Annuale
+  paypal.Buttons({
+    style: { shape: 'rect', color: 'gold', layout: 'vertical', label: 'subscribe' },
+    createSubscription: function(data, actions) {
+      return actions.subscription.create({ plan_id: 'P-05N65356F8389743PNKXNM2Y' });
+    },
+    onApprove: async function(data, actions) {
+      await salvaAbbonamento(data.subscriptionID, 'pro_annuale');
+    },
+    onError: function(err) {
+      console.error('Errore PayPal annuale:', err);
+      mostraMessaggio('Errore nel pagamento. Riprova o contattaci.', 'errore');
+    }
+  }).render('#paypal-button-annuale');
+}
+
+// === SALVATAGGIO ABBONAMENTO ===
+async function salvaAbbonamento(subscriptionID, plan) {
+  console.log('Abbonamento approvato:', subscriptionID, plan);
+  try {
+    const { error } = await supabaseClient
+      .from('subscriptions')
+      .insert({
+        user_id: currentUser.id,
+        subscription_id: subscriptionID,
+        plan: plan,
+        status: 'active'
+      });
+
+    if (error) {
+      console.error('Errore salvataggio subscription:', error);
+      mostraMessaggio('Abbonamento attivato ma errore nel salvataggio. Contatta il supporto con ID: ' + subscriptionID, 'errore');
+      return;
+    }
+
+    mostraMessaggio('🎉 Abbonamento attivato! Ricarico...', 'successo');
+    setTimeout(() => window.location.reload(), 2000);
+  } catch (e) {
+    console.error('Eccezione salvataggio:', e);
+    mostraMessaggio('Errore: ' + e.message, 'errore');
+  }
 }
 
 function mostraMessaggio(testo, tipo) {
