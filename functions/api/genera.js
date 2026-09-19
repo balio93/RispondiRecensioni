@@ -2,12 +2,7 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   const apiKey = env.GEMINI_API_KEY;
-  const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
-
   if (!apiKey) return json({ error: 'Chiave Gemini non configurata' }, 500);
-  if (!serviceRoleKey) return json({ error: 'Chiave Supabase non configurata' }, 500);
-
-  const SUPABASE_URL = "https://htixuodbcfdvvlsipedtl.supabase.co";
 
   let body;
   try {
@@ -18,82 +13,26 @@ export async function onRequestPost(context) {
 
   const { nome, settore, nomeRecensore, stelle, tono, recensione, lunghezza, firma, accessToken } = body;
 
-  if (!accessToken) {
-    return json({ error: 'Devi essere loggato per generare risposte' }, 401);
-  }
-  if (!nome || !recensione) {
-    return json({ error: 'Nome attività e recensione sono obbligatori' }, 400);
-  }
+  if (!accessToken) return json({ error: 'Devi essere loggato' }, 401);
+  if (!nome || !recensione) return json({ error: 'Nome attività e recensione sono obbligatori' }, 400);
 
-  function decodeJWT(token) {
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) return null;
-      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-      const jsonPayload = decodeURIComponent(
-        atob(base64).split('').map(c =>
-          '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
-        ).join('')
-      );
-      return JSON.parse(jsonPayload);
-    } catch (e) {
-      return null;
-    }
-  }
-
-  const payload = decodeJWT(accessToken);
-  if (!payload || !payload.sub) {
-    return json({ error: 'Token non valido. Effettua di nuovo il login.' }, 401);
-  }
-  if (payload.exp && (payload.exp * 1000) < Date.now()) {
-    return json({ error: 'Sessione scaduta. Effettua di nuovo il login.' }, 401);
-  }
-  const userId = payload.sub;
-
-  const oggi = new Date().toISOString().split('T')[0];
-  const LIMITE_FREE = 3;
-
-  let usoOggi = 0;
-  let letturaStatus = 'non eseguita';
-  let letturaErrore = null;
-  let letturaRighe = null;
-
+  // Verifica basilare del token (decodifica JWT)
   try {
-    const usageRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/usage?user_id=eq.${userId}&data=eq.${oggi}&select=risposte_usate`,
-      {
-        headers: {
-          'apikey': serviceRoleKey,
-          'Authorization': `Bearer ${serviceRoleKey}`
-        }
-      }
+    const parts = accessToken.split('.');
+    if (parts.length !== 3) throw new Error('token malformato');
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64).split('').map(c =>
+        '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+      ).join('')
     );
-    letturaStatus = usageRes.status;
-    if (usageRes.ok) {
-      letturaRighe = await usageRes.json();
-      if (letturaRighe.length > 0) usoOggi = letturaRighe[0].risposte_usate;
-    } else {
-      letturaErrore = await usageRes.text();
+    const payload = JSON.parse(jsonPayload);
+    if (!payload.sub) throw new Error('userId mancante');
+    if (payload.exp && (payload.exp * 1000) < Date.now()) {
+      return json({ error: 'Sessione scaduta. Effettua di nuovo il login.' }, 401);
     }
   } catch (e) {
-    letturaErrore = e.message;
-  }
-
-  if (usoOggi >= LIMITE_FREE) {
-    return json({
-      error: 'Hai esaurito le 3 risposte gratuite di oggi. Torna domani o passa a Pro.',
-      limiteRaggiunto: true,
-      rimanenti: 0,
-      _debug: {
-        userId,
-        usoOggi,
-        letturaStatus,
-        letturaErrore,
-        letturaRighe,
-        serviceRoleKeyLength: serviceRoleKey.length,
-        serviceRoleKeyPrefix: serviceRoleKey.substring(0, 6)
-      }
-    }, 429);
+    return json({ error: 'Token non valido. Effettua di nuovo il login.' }, 401);
   }
 
   const istruzioniRecensore = nomeRecensore
@@ -192,50 +131,7 @@ Rispondi SOLO con il testo della risposta, senza introduzioni, titoli, commenti 
     return json({ error: 'Tutti i modelli sono momentaneamente occupati. Riprova tra 30 secondi.' }, 503);
   }
 
-  const nuovoUso = usoOggi + 1;
-  let saveStatus = 'non eseguito';
-  let saveError = null;
-
-  try {
-    const saveRes = await fetch(`${SUPABASE_URL}/rest/v1/usage?on_conflict=user_id,data`, {
-      method: 'POST',
-      headers: {
-        'apikey': serviceRoleKey,
-        'Authorization': `Bearer ${serviceRoleKey}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates,return=minimal'
-      },
-      body: JSON.stringify([{
-        user_id: userId,
-        data: oggi,
-        risposte_usate: nuovoUso
-      }])
-    });
-
-    saveStatus = saveRes.status;
-    if (!saveRes.ok) {
-      saveError = await saveRes.text();
-    }
-  } catch (e) {
-    saveError = e.message;
-  }
-
-  return json({
-    testo,
-    rimanenti: LIMITE_FREE - nuovoUso,
-    _debug: {
-      userId,
-      usoOggi,
-      nuovoUso,
-      letturaStatus,
-      letturaErrore,
-      letturaRighe,
-      saveStatus,
-      saveError,
-      serviceRoleKeyLength: serviceRoleKey.length,
-      serviceRoleKeyPrefix: serviceRoleKey.substring(0, 6)
-    }
-  }, 200);
+  return json({ testo }, 200);
 }
 
 function json(obj, status) {
