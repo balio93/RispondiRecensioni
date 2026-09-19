@@ -4,10 +4,14 @@ export async function onRequestPost(context) {
   const apiKey = env.GEMINI_API_KEY;
   const serviceRoleKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
+  console.log('DEBUG: apiKey presente?', !!apiKey);
+  console.log('DEBUG: serviceRoleKey presente?', !!serviceRoleKey);
+  console.log('DEBUG: lunghezza serviceRoleKey:', serviceRoleKey ? serviceRoleKey.length : 0);
+  console.log('DEBUG: primi 8 caratteri serviceRoleKey:', serviceRoleKey ? serviceRoleKey.substring(0, 8) : 'vuota');
+
   if (!apiKey) return json({ error: 'Chiave Gemini non configurata' }, 500);
   if (!serviceRoleKey) return json({ error: 'Chiave Supabase non configurata' }, 500);
 
-  // Project URL Supabase (è pubblico, già visibile nel client)
   const SUPABASE_URL = "https://htixuodbcfdvvlsipedtl.supabase.co";
 
   let body;
@@ -19,7 +23,6 @@ export async function onRequestPost(context) {
 
   const { nome, settore, nomeRecensore, stelle, tono, recensione, lunghezza, firma, accessToken } = body;
 
-  // === VERIFICA INPUT ===
   if (!accessToken) {
     return json({ error: 'Devi essere loggato per generare risposte' }, 401);
   }
@@ -27,8 +30,7 @@ export async function onRequestPost(context) {
     return json({ error: 'Nome attività e recensione sono obbligatori' }, 400);
   }
 
-    // === VERIFICA UTENTE ===
-  // Decodifichiamo il JWT per estrarre l'user ID (il token è firmato da Supabase)
+  // === VERIFICA UTENTE (decodifica JWT) ===
   function decodeJWT(token) {
     try {
       const parts = token.split('.');
@@ -54,29 +56,38 @@ export async function onRequestPost(context) {
   }
   const userId = payload.sub;
 
+  console.log('DEBUG: userId estratto:', userId);
+
   // === CONTROLLO LIMITE GIORNALIERO ===
   const oggi = new Date().toISOString().split('T')[0];
   const LIMITE_FREE = 3;
 
   let usoOggi = 0;
   try {
-    const usageRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/usage?user_id=eq.${userId}&data=eq.${oggi}&select=risposte_usate`,
-      {
-        headers: {
-          'apikey': serviceRoleKey,
-          'Authorization': `Bearer ${serviceRoleKey}`
-        }
+    const urlLettura = `${SUPABASE_URL}/rest/v1/usage?user_id=eq.${userId}&data=eq.${oggi}&select=risposte_usate`;
+    console.log('DEBUG: URL lettura:', urlLettura);
+
+    const usageRes = await fetch(urlLettura, {
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': `Bearer ${serviceRoleKey}`
       }
-    );
+    });
+    console.log('DEBUG: lettura usage status:', usageRes.status);
+
     if (usageRes.ok) {
       const rows = await usageRes.json();
+      console.log('DEBUG: righe trovate:', JSON.stringify(rows));
       if (rows.length > 0) usoOggi = rows[0].risposte_usate;
+    } else {
+      const errText = await usageRes.text();
+      console.log('DEBUG: errore lettura:', errText);
     }
   } catch (e) {
-    // Se il controllo fallisce, meglio non bloccare l'utente
-    console.error('Errore controllo usage', e);
+    console.log('DEBUG: eccezione lettura:', e.message);
   }
+
+  console.log('DEBUG: usoOggi:', usoOggi);
 
   if (usoOggi >= LIMITE_FREE) {
     return json({
@@ -184,26 +195,35 @@ Rispondi SOLO con il testo della risposta, senza introduzioni, titoli, commenti 
     return json({ error: 'Tutti i modelli sono momentaneamente occupati. Riprova tra 30 secondi.' }, 503);
   }
 
-  // === INCREMENTO CONTATORE (solo dopo successo) ===
+  // === INCREMENTO CONTATORE ===
   const nuovoUso = usoOggi + 1;
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/usage?on_conflict=user_id,data`, {
+    const urlSalvataggio = `${SUPABASE_URL}/rest/v1/usage?on_conflict=user_id,data`;
+    console.log('DEBUG: URL salvataggio:', urlSalvataggio);
+    console.log('DEBUG: body salvataggio:', JSON.stringify([{ user_id: userId, data: oggi, risposte_usate: nuovoUso }]));
+
+    const saveRes = await fetch(urlSalvataggio, {
       method: 'POST',
       headers: {
         'apikey': serviceRoleKey,
         'Authorization': `Bearer ${serviceRoleKey}`,
         'Content-Type': 'application/json',
-        'Prefer': 'resolution=merge-duplicates'
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
       },
-      body: JSON.stringify({
+      body: JSON.stringify([{
         user_id: userId,
         data: oggi,
         risposte_usate: nuovoUso
-      })
+      }])
     });
+
+    console.log('DEBUG: risposta salvataggio status:', saveRes.status);
+    if (!saveRes.ok) {
+      const errText = await saveRes.text();
+      console.log('DEBUG: errore salvataggio:', saveRes.status, errText);
+    }
   } catch (e) {
-    console.error('Errore salvataggio usage', e);
-    // Non blocchiamo l'utente se il salvataggio fallisce
+    console.log('DEBUG: eccezione salvataggio:', e.message);
   }
 
   return json({
