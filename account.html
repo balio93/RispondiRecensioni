@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8">
@@ -6,6 +6,7 @@
 <title>Il tuo account — Replica</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://www.paypal.com/sdk/js?client-id=BAA-vg9ON-HQ2E_utLfYsIddfatYNek4AiSunF1RNcOBtiLuLnXIlTCI-ppqldTaSfsG3CRbGhfWUBs9qM&vault=true&intent=subscription" data-sdk-integration-source="button-factory"></script>
 <style>
   .spinner {
     border: 4px solid #e5e7eb;
@@ -53,7 +54,22 @@
         </div>
       </div>
 
-      <div id="cardUpgrade" class="bg-white rounded-lg shadow p-6 mb-6 border-2 border-blue-600">
+      <!-- Sezione Pro attivo (mostrata solo se l'utente è Pro) -->
+      <div id="cardPro" class="hidden bg-white rounded-lg shadow p-6 mb-6 border-2 border-green-600">
+        <div class="flex items-center gap-3 mb-3">
+          <span class="text-2xl">✅</span>
+          <div>
+            <h2 class="text-lg font-semibold text-gray-800">Sei un utente Pro</h2>
+            <p class="text-sm text-gray-500">Risposte illimitate attive sul tuo account.</p>
+          </div>
+        </div>
+        <div class="text-xs text-gray-400 mt-4">
+          ID abbonamento: <span id="subId" class="font-mono">—</span>
+        </div>
+      </div>
+
+      <!-- Sezione upgrade (mostrata solo se l'utente NON è Pro) -->
+      <div id="cardUpgrade" class="hidden bg-white rounded-lg shadow p-6 mb-6 border-2 border-blue-600">
         <div class="flex justify-between items-start mb-4">
           <div>
             <h2 class="text-lg font-semibold text-gray-800 mb-1">Passa a Pro</h2>
@@ -61,28 +77,19 @@
           </div>
           <span class="bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">Consigliato</span>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div class="border border-gray-200 rounded-lg p-4">
-            <p class="text-sm font-semibold text-gray-800 mb-1">Mensile</p>
-            <p class="text-2xl font-bold text-gray-800">4,90€ <span class="text-sm font-normal text-gray-500">primo mese</span></p>
-            <p class="text-xs text-gray-400 mb-3">Poi 9€/mese</p>
-            <button onclick="attivaPro('mensile')"
-              class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-md transition">
-              Attiva mensile
-            </button>
-          </div>
-          <div class="border border-gray-200 rounded-lg p-4">
-            <p class="text-sm font-semibold text-gray-800 mb-1">Annuale</p>
-            <p class="text-2xl font-bold text-gray-800">89€ <span class="text-sm font-normal text-gray-500">/anno</span></p>
-            <p class="text-xs text-gray-400 mb-3">Risparmi 19€</p>
-            <button onclick="attivaPro('annuale')"
-              class="w-full border border-blue-600 text-blue-600 hover:bg-blue-50 text-sm font-semibold py-2 px-4 rounded-md transition">
-              Attiva annuale
-            </button>
-          </div>
+
+        <div class="bg-blue-50 rounded-lg p-4 mb-4">
+          <p class="text-sm font-semibold text-gray-800 mb-1">Piano Pro Mensile</p>
+          <p class="text-2xl font-bold text-gray-800">4,90€ <span class="text-sm font-normal text-gray-500">primo mese</span></p>
+          <p class="text-xs text-gray-500 mb-0">Poi 9€/mese · disdici quando vuoi dal tuo account PayPal</p>
         </div>
-        <p class="text-xs text-gray-400 text-center">
-          Pagamento sicuro tramite PayPal · Disdici quando vuoi
+
+        <div id="paypal-button-container-P-8GW62177MN2667141NKXNGDI"></div>
+
+        <div id="messaggioPagamento" class="hidden text-sm text-center mt-4"></div>
+
+        <p class="text-xs text-gray-400 text-center mt-4">
+          Pagamento sicuro tramite PayPal · Nessuna carta richiesta sul sito
         </p>
       </div>
 
@@ -106,30 +113,149 @@
   </footer>
 
 <script>
-// ⚠️ SOSTITUISCI QUESTI DUE VALORI CON I TUOI (gli stessi di signup.html)
 const SUPABASE_URL = "https://htixuodbcfdvvlspedtl.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh0aXh1b2RiY2ZkdnZsc3BlZHRsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3NjE3NjIsImV4cCI6MjEwNTMzNzc2Mn0.Kw1D3_7U8Y5vUcEeJen9aoLQmUGHVzlUEpSWTodBpp4";
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// === CONTROLLO SESSIONE ===
+let currentUser = null;
+
+function oggiStringa() {
+  return new Date().toISOString().split('T')[0];
+}
+
+// === CARICAMENTO INIZIALE ===
 (async () => {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (!session) {
     window.location.href = 'login.html';
     return;
   }
+  currentUser = session.user;
   document.getElementById('emailUtente').textContent = session.user.email;
   document.getElementById('authCheck').classList.add('hidden');
   document.getElementById('contenuto').classList.remove('hidden');
+
+  await caricaStatoAccount();
+  await caricaContatore();
+  await initPayPal();
 })();
 
-// === UPGRADE (verrà collegato a PayPal nello Step 4) ===
-function attivaPro(tipo) {
-  alert('La funzione di pagamento sarà attivata a breve. Hai scelto il piano ' + tipo + '.');
+// === STATO ACCOUNT (FREE o PRO) ===
+async function caricaStatoAccount() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('subscriptions')
+      .select('subscription_id, plan, status')
+      .eq('user_id', currentUser.id)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (error) {
+      console.error('Errore lettura subscriptions:', error);
+      return;
+    }
+
+    if (data) {
+      // Utente PRO
+      document.getElementById('pianoAttivo').textContent = 'Pro';
+      document.getElementById('pianoAttivo').className = 'text-sm font-semibold text-green-700 bg-green-100 px-3 py-1 rounded-full';
+      document.getElementById('cardPro').classList.remove('hidden');
+      document.getElementById('subId').textContent = data.subscription_id;
+    } else {
+      // Utente FREE
+      document.getElementById('cardUpgrade').classList.remove('hidden');
+    }
+  } catch (e) {
+    console.error('Eccezione stato account:', e);
+  }
 }
 
-// === LOGOUT ===
+// === CONTATORE USO ===
+async function caricaContatore() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('usage')
+      .select('risposte_usate')
+      .eq('user_id', currentUser.id)
+      .eq('data', oggiStringa())
+      .maybeSingle();
+
+    if (!error) {
+      const usate = data ? data.risposte_usate : 0;
+      document.getElementById('risposteOggi').textContent = usate + ' / 3';
+    }
+  } catch (e) {
+    console.error('Errore contatore:', e);
+  }
+}
+
+// === PULSANTE PAYPAL ===
+async function initPayPal() {
+  // Se l'utente è Pro, non mostrare il pulsante PayPal
+  const cardUpgrade = document.getElementById('cardUpgrade');
+  if (cardUpgrade.classList.contains('hidden')) return;
+
+  // Aspetta che PayPal SDK sia pronto
+  if (typeof paypal === 'undefined') {
+    setTimeout(initPayPal, 500);
+    return;
+  }
+
+  paypal.Buttons({
+    style: {
+      shape: 'rect',
+      color: 'gold',
+      layout: 'vertical',
+      label: 'subscribe'
+    },
+    createSubscription: function(data, actions) {
+      return actions.subscription.create({
+        plan_id: 'P-8GW62177MN2667141NKXNGDI'
+      });
+    },
+    onApprove: async function(data, actions) {
+      const subscriptionID = data.subscriptionID;
+      console.log('Abbonamento approvato:', subscriptionID);
+
+      // Salva l'abbonamento su Supabase
+      try {
+        const { error } = await supabaseClient
+          .from('subscriptions')
+          .insert({
+            user_id: currentUser.id,
+            subscription_id: subscriptionID,
+            plan: 'pro_mensile',
+            status: 'active'
+          });
+
+        if (error) {
+          console.error('Errore salvataggio subscription:', error);
+          mostraMessaggio('Abbonamento attivato ma errore nel salvataggio. Contatta il supporto con ID: ' + subscriptionID, 'errore');
+          return;
+        }
+
+        mostraMessaggio('🎉 Abbonamento attivato! Ricarico...', 'successo');
+        setTimeout(() => window.location.reload(), 2000);
+      } catch (e) {
+        console.error('Eccezione salvataggio:', e);
+        mostraMessaggio('Errore: ' + e.message, 'errore');
+      }
+    },
+    onError: function(err) {
+      console.error('Errore PayPal:', err);
+      mostraMessaggio('Errore nel pagamento. Riprova o contattaci.', 'errore');
+    }
+  }).render('#paypal-button-container-P-8GW62177MN2667141NKXNGDI');
+}
+
+function mostraMessaggio(testo, tipo) {
+  const el = document.getElementById('messaggioPagamento');
+  el.textContent = testo;
+  el.className = 'text-sm text-center mt-4 ' + (tipo === 'errore' ? 'text-red-600' : 'text-green-600');
+  el.classList.remove('hidden');
+}
+
 async function logout() {
   await supabaseClient.auth.signOut();
   window.location.href = 'index.html';
